@@ -98,6 +98,7 @@ class RabbitMQConsumer
 
             $this->channel->exchange_declare($exchange, AMQPExchangeType::TOPIC, false, true);
             $this->channel->exchange_declare('retry-' . $exchange, AMQPExchangeType::TOPIC, false, true);
+            $this->channel->exchange_declare('dead_letter-' . $exchange, AMQPExchangeType::TOPIC, false, true);
 
             $this->channel->queue_declare($this->queue, false, true, false, false);
             $this->channel->queue_declare('retry.' . $this->queue, false, true, false, false, false, new AMQPTable(array(
@@ -105,10 +106,12 @@ class RabbitMQConsumer
                 'x-dead-letter-routing-key' => $this->queue,
                 "x-message-ttl" => 15000
             )));
+            $this->channel->queue_declare('dead_letter.' . $this->queue, false, true, false, false);
 
             $this->channel->queue_bind($this->queue, $exchange, $routingKey);
             $this->channel->queue_bind($this->queue, $exchange, $this->queue);
             $this->channel->queue_bind('retry.' . $this->queue, 'retry-' . $exchange, $this->queue);
+            $this->channel->queue_bind('dead_letter.' . $this->queue, 'dead_letter-' . $exchange, $this->queue);
 
 
             $this->channel->basic_consume($this->queue, $consumerTag, false, false,
@@ -144,6 +147,11 @@ class RabbitMQConsumer
                     $increasedRetries = $dataAsArray[self::RETRIES] + 1;
                     $properties->set(self::RETRIES, $increasedRetries);
                     $message->get('channel')->basic_publish($message, 'retry-' . $this->exchange, $this->queue);
+                }
+                if ($dataAsArray[self::RETRIES] >= RabbitMQConsumer::MAX_RETRIES) {
+                    $increasedRetries = $dataAsArray[self::RETRIES] + 1;
+                    $properties->set(self::RETRIES, $increasedRetries);
+                    $message->get('channel')->basic_publish($message, 'dead_letter-' . $this->exchange, $this->queue);
                 }
             }
         };
