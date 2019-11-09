@@ -9,7 +9,6 @@ use Exception;
 use InvalidArgumentException;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Exchange\AMQPExchangeType;
 use PhpAmqpLib\Message\AMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 
@@ -77,43 +76,21 @@ class RabbitMQConsumer
      */
     public function __invoke($queueName, $routingKey, Closure $callback)
     {
-        $channel = $this->getChannel($queueName, $routingKey, $callback);
+        $channel = $this->getChannel($queueName, $callback);
         $channel->wait(null, true);
     }
 
     /**
      * @param string $queueName
-     * @param string $routingKey
      * @param Closure $callback
      * @return AMQPChannel
      */
-    private function getChannel($queueName, $routingKey, Closure $callback)
+    private function getChannel($queueName, Closure $callback)
     {
         if ($this->channel === null) {
-            $exchange = $this->exchange;
             $this->queue = $queueName;
             $consumerTag = 'consumer_' . date('u');
-
             $this->channel = $this->connection->channel();
-
-            $this->channel->exchange_declare($exchange, AMQPExchangeType::TOPIC, false, true);
-            $this->channel->exchange_declare('retry-' . $exchange, AMQPExchangeType::TOPIC, false, true);
-            $this->channel->exchange_declare('dead_letter-' . $exchange, AMQPExchangeType::TOPIC, false, true);
-
-            $this->channel->queue_declare($this->queue, false, true, false, false);
-            $this->channel->queue_declare('retry.' . $this->queue, false, true, false, false, false, new AMQPTable(array(
-                "x-dead-letter-exchange" => $exchange,
-                'x-dead-letter-routing-key' => $this->queue,
-                "x-message-ttl" => 15000
-            )));
-            $this->channel->queue_declare('dead_letter.' . $this->queue, false, true, false, false);
-
-            $this->channel->queue_bind($this->queue, $exchange, $routingKey);
-            $this->channel->queue_bind($this->queue, $exchange, $this->queue);
-            $this->channel->queue_bind('retry.' . $this->queue, 'retry-' . $exchange, $this->queue);
-            $this->channel->queue_bind('dead_letter.' . $this->queue, 'dead_letter-' . $exchange, $this->queue);
-
-
             $this->channel->basic_consume($this->queue, $consumerTag, false, false,
                 false, false, $this->consume($callback));
 

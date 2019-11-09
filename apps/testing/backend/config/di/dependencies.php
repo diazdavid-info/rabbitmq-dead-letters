@@ -7,6 +7,7 @@ use Diaz\Shared\Infrastructure\Monolog\MonologLogger;
 use Diaz\Shared\Infrastructure\RabbitMQ\RabbitMQConnection;
 use Diaz\Shared\Infrastructure\RabbitMQ\RabbitMQConsumer;
 use Diaz\Shared\Infrastructure\RabbitMQ\RabbitMQPublisher;
+use Diaz\TestingBackend\command\configuration\RabbitConfigurationCommand;
 use Diaz\TestingBackend\command\random\ConsumeRandomMessageCommand;
 use Diaz\TestingBackend\command\random\PublishRandomMessageCommand;
 use Monolog\Formatter\JsonFormatter;
@@ -60,6 +61,12 @@ return static function (Container $container) {
             $container->get(RabbitMQConnection::class),
             'domain_event',
             $container->get(Logger::class)
+        );
+    });
+
+    $container->set(RabbitConfigurationCommand::class, function (ContainerInterface $container) {
+        return new RabbitConfigurationCommand(
+            $container->get(RabbitMQConnection::class)
         );
     });
 

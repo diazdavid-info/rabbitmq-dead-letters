@@ -8,7 +8,6 @@ use Diaz\Shared\Domain\Publisher\Publisher;
 use Exception;
 use InvalidArgumentException;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Exchange\AMQPExchangeType;
 use PhpAmqpLib\Message\AMQPMessage;
 
 /**
@@ -45,12 +44,9 @@ class RabbitMQPublisher implements Publisher
      */
     public function publish(Message $message)
     {
-        $conection = $this->getConnection();
-        $exchange = $this->exchange;
-        $routingKey = $message->type();
+        $connection = $this->getConnection();
+        $channel = $connection->channel();
 
-        $channel = $conection->channel();
-        $channel->exchange_declare($exchange, AMQPExchangeType::TOPIC, false, true);
         $amqpMessage = new AMQPMessage(
             json_encode($message->toArray()),
             [
@@ -58,10 +54,10 @@ class RabbitMQPublisher implements Publisher
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
             ]
         );
-        $channel->basic_publish($amqpMessage, $exchange, $routingKey);
+        $channel->basic_publish($amqpMessage, $this->exchange, $message->type());
 
         $channel->close();
-        $conection->close();
+        $connection->close();
         $this->logger->info('Message Published', [
             'message_id' => $message->getMessageId(),
             'occurred_on' => $message->getOccurredOn(),

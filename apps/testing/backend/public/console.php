@@ -1,6 +1,7 @@
 <?php
 
 use DI\ContainerBuilder;
+use Diaz\TestingBackend\command\configuration\RabbitConfigurationCommand;
 use Diaz\TestingBackend\command\random\ConsumeRandomMessageCommand;
 use Diaz\TestingBackend\command\random\PublishRandomMessageCommand;
 use Dotenv\Dotenv;
@@ -22,6 +23,7 @@ try {
     $application = new Application();
     $application->add($container->get(PublishRandomMessageCommand::class));
     $application->add($container->get(ConsumeRandomMessageCommand::class));
+    $application->add($container->get(RabbitConfigurationCommand::class));
     $application->run();
     exit(0);
 } catch (Exception $e) {
