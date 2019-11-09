@@ -17,10 +17,6 @@ use PhpAmqpLib\Message\AMQPMessage;
  */
 class RabbitMQPublisher implements Publisher
 {
-    const INITIAL_RETRIES = 0;
-    const RETRIES = 'x-delivered-count';
-    const RABBIT_INT_TYPE = 's';
-
     /** @var AMQPStreamConnection */
     private $connection;
     /** @var string */
@@ -60,7 +56,6 @@ class RabbitMQPublisher implements Publisher
             [
                 'content_type' => 'text/plain',
                 'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
-                'application_headers' => [self::RETRIES => [self::RABBIT_INT_TYPE, self::INITIAL_RETRIES]]
             ]
         );
         $channel->basic_publish($amqpMessage, $exchange, $routingKey);

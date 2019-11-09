@@ -61,6 +61,7 @@ class ConsumeRandomMessageCommand extends Command
                     'testing.random_checked',
                     'diaz.random.event.random.checked',
                     function ($message) {
+//                        throw new Exception('error');
                         // ...
                     }]
             );

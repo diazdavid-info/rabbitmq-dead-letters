@@ -20,6 +20,8 @@ use PhpAmqpLib\Wire\AMQPTable;
 class RabbitMQConsumer
 {
     const MAX_RETRIES = 5;
+    const INITIAL_RETRIES = 0;
+    const RETRIES = 'x-delivered-count';
 
     /** @var AMQPStreamConnection */
     private $connection;
@@ -118,12 +120,16 @@ class RabbitMQConsumer
                 $this->log($message, 'info');
             } catch (Exception $e) {
                 $this->log($message, 'error');
+                if (!$message->has('application_headers')) {
+                    $table = new AMQPTable([self::RETRIES => self::INITIAL_RETRIES]);
+                    $message->set('application_headers', $table);
+                }
                 /** @var AMQPTable $properties */
                 $properties = $message->get('application_headers');
                 $dataAsArray = $properties->getNativeData();
-                if ($dataAsArray[RabbitMQPublisher::RETRIES] < RabbitMQConsumer::MAX_RETRIES) {
-                    $increasedRetries = $dataAsArray[RabbitMQPublisher::RETRIES] + 1;
-                    $properties->set(RabbitMQPublisher::RETRIES, $increasedRetries);
+                if ($dataAsArray[self::RETRIES] < RabbitMQConsumer::MAX_RETRIES) {
+                    $increasedRetries = $dataAsArray[self::RETRIES] + 1;
+                    $properties->set(self::RETRIES, $increasedRetries);
                     $message->get('channel')->basic_publish($message, $this->exchange, $message->get('routing_key'));
                 }
             }
