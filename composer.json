@@ -1,0 +1,11 @@
+{
+  "name": "daviddiaz/rabbitmq-dead-letters",
+  "description": "Kata para probar las colas de retry y dead letter automáticas",
+  "authors": [
+    {
+      "name": "David Diaz",
+      "email": "diazdavid.info@gmail.com"
+    }
+  ],
+  "require": {}
+}
