@@ -120,15 +120,13 @@ class RabbitMQConsumer
                 /** @var AMQPTable $properties */
                 $properties = $message->get('application_headers');
                 $dataAsArray = $properties->getNativeData();
+                $increasedRetries = $dataAsArray[self::RETRIES] + 1;
+                $properties->set(self::RETRIES, $increasedRetries);
                 if ($dataAsArray[self::RETRIES] < RabbitMQConsumer::MAX_RETRIES) {
-                    $increasedRetries = $dataAsArray[self::RETRIES] + 1;
-                    $properties->set(self::RETRIES, $increasedRetries);
-                    $message->get('channel')->basic_publish($message, 'retry-' . $this->exchange, $this->queue);
+                    $message->get('channel')->basic_publish($message, $this->retryExchangeName(), $this->queue);
                 }
                 if ($dataAsArray[self::RETRIES] >= RabbitMQConsumer::MAX_RETRIES) {
-                    $increasedRetries = $dataAsArray[self::RETRIES] + 1;
-                    $properties->set(self::RETRIES, $increasedRetries);
-                    $message->get('channel')->basic_publish($message, 'dead_letter-' . $this->exchange, $this->queue);
+                    $message->get('channel')->basic_publish($message, $this->deadLetterExchangeName(), $this->queue);
                 }
             }
         };
@@ -159,5 +157,22 @@ class RabbitMQConsumer
         $this->channel->close();
         $this->connection->close();
     }
+
+    /**
+     * @return string
+     */
+    private function retryExchangeName()
+    {
+        return sprintf('retry-%s', $this->exchange);
+    }
+
+    /**
+     * @return string
+     */
+    private function deadLetterExchangeName()
+    {
+        return sprintf('dead_letter-%s', $this->exchange);
+    }
+
 
 }
