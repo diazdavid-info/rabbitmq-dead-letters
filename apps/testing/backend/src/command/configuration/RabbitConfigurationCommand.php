@@ -178,8 +178,8 @@ class RabbitConfigurationCommand extends Command
     {
         $this->declareBind($queue, $exchange, $routingKey);
         $this->declareBind($queue, $exchange, $queue);
-        $this->declareBind(self::retryQueueName($queue), $exchange, $queue);
-        $this->declareBind(self::deadLetterQueueName($queue), $exchange, $queue);
+        $this->declareBind(self::retryQueueName($queue), self::retryExchangeName($exchange), $queue);
+        $this->declareBind(self::deadLetterQueueName($queue), self::deadLetterExchangeName($exchange), $queue);
     }
 
     /**
