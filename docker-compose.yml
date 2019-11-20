@@ -1,0 +1,21 @@
+version: '3.5'
+
+services:
+  rabbitmq-dead-letters:
+    image: rabbitmq:3.8-rc-management-alpine
+    container_name: rabbitmq-dead-letters
+    ports:
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "15671:15671"
+      - "15672:15672"
+      - "25672:25672"
+    volumes:
+      - ./resource/docker/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - rabbitmq-dead-letters
+
+networks:
+  rabbitmq-dead-letters:
+    name: rabbitmq-dead-letters
