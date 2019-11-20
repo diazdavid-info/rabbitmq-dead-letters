@@ -6,6 +6,7 @@ use Closure;
 use Diaz\Shared\Infrastructure\RabbitMQ\RabbitMQConsumer;
 use Exception;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use function Lambdish\Phunctional\apply;
@@ -38,7 +39,8 @@ class ConsumeRandomMessageCommand extends Command
     {
         $this
             ->setName('testing:random:message_consume')
-            ->setDescription('Publicar mensaje random a Rabbit MQ');
+            ->setDescription('Publicar mensaje random a Rabbit MQ')
+            ->addArgument('throwException', InputArgument::OPTIONAL, 'Throw exception', '0');
     }
 
     /**
@@ -48,21 +50,24 @@ class ConsumeRandomMessageCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        pipe(repeat($this->consume(), 1), $this->consumer->close());
+        $throwException = $input->getArgument('throwException') === '1';
+        pipe(repeat($this->consume($throwException), 1), $this->consumer->close());
     }
 
     /**
+     * @param bool $throwException
      * @return Closure
      */
-    private function consume()
+    private function consume($throwException)
     {
-        return function () {
+        return function () use ($throwException) {
             apply($this->consumer, [
                     'testing.random_checked',
                     'diaz.random.event.random.checked',
-                    function ($message) {
-//                        throw new Exception('error');
-                        // ...
+                    function ($message) use ($throwException) {
+                        if ($throwException) {
+                            throw new Exception('error');
+                        }
                     }]
             );
         };
